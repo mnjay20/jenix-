@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build and Output directories
+dist/
+**/dist/
+build/
+**/build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Server Cache and Logs
+cache/
+**/cache/
+logs/
+**/logs/
+*.log
+
+# System & OS Files
+.DS_Store
+Thumbs.db
+*.swp
+
+# IDE Configs
+.vscode/
+.idea/
+
+# Scratch & Temporary Test Files
+scratch/
+**/scratch/
+src/test_flow.ts
+src/test_atlas.ts

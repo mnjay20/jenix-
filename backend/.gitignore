@@ -1,0 +1,116 @@
+# ------------------------
+# Dependencies
+# ------------------------
+node_modules/
+cache/
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------
+# Build Output
+# ------------------------
+dist/
+build/
+out/
+
+# ------------------------
+# TypeScript
+# ------------------------
+*.tsbuildinfo
+
+# ------------------------
+# Environment Variables
+# ------------------------
+.env
+.env.*
+!.env.example
+
+# ------------------------
+# IDEs
+# ------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ------------------------
+# OS Files
+# ------------------------
+.DS_Store
+Thumbs.db
+
+# ------------------------
+# Logs
+# ------------------------
+logs/
+*.log
+
+# ------------------------
+# Temporary Files
+# ------------------------
+tmp/
+temp/
+*.tmp
+
+# ------------------------
+# Audio / Video Downloads
+# ------------------------
+downloads/
+audio/
+chunks/
+transcripts/
+cache/
+
+# ------------------------
+# FFmpeg / yt-dlp Output
+# ------------------------
+*.mp3
+*.wav
+*.ogg
+*.webm
+*.m4a
+*.aac
+*.flac
+*.mp4
+*.mkv
+
+# ------------------------
+# Redis Dumps
+# ------------------------
+dump.rdb
+appendonly.aof
+
+# ------------------------
+# MongoDB
+# ------------------------
+*.wt
+*.ns
+*.lock
+
+# ------------------------
+# Coverage
+# ------------------------
+coverage/
+.nyc_output/
+
+# ------------------------
+# Test Files
+# ------------------------
+test-results/
+playwright-report/
+
+# ------------------------
+# Misc
+# ------------------------
+*.pid
+*.seed
+*.pid.lock
+
+# ------------------------
+# Optional
+# ------------------------
+.vercel/
+.next/

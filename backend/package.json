@@ -1,0 +1,44 @@
+{
+  "name": "fourth",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@langchain/google-genai": "^2.2.0",
+    "@langchain/langgraph": "^1.4.7",
+    "@langchain/textsplitters": "^1.0.1",
+    "cloudinary": "^2.10.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "groq-sdk": "^1.5.0",
+    "ioredis": "^5.11.1",
+    "langchain": "^1.4.4",
+    "md-to-pdf": "^5.2.5",
+    "mongodb": "^7.2.0",
+    "nanoid": "^5.1.6",
+    "socket.io": "^4.8.3",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "puppeteer@25.3.0": true
+  }
+}
