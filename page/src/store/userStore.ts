@@ -5,7 +5,6 @@ const BACKEND_URL = "http://localhost:3000";
 
 export interface UserProfile {
     userId: string;
-    gmail: string;
     Sessions: string[];
 }
 
@@ -13,7 +12,7 @@ export interface UserState {
     user: UserProfile | null;
     isLoggedIn: boolean;
     syncError: string | null;
-    login: (username: string, email: string) => Promise<void>;
+    login: (username: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -22,13 +21,13 @@ export const userStore = create<UserState>((set) => ({
     isLoggedIn: false,
     syncError: null,
 
-    login: async (username: string, email: string) => {
+    login: async (username: string) => {
         try {
             set({ syncError: null });
             const response = await fetch(`${BACKEND_URL}/api/users/sync`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: username, email }),
+                body: JSON.stringify({ userId: username }),
             });
 
             const data = await response.json();
@@ -37,7 +36,7 @@ export const userStore = create<UserState>((set) => ({
             }
 
             set({
-                user: { userId: username, gmail: email, Sessions: [] },
+                user: { userId: username, Sessions: [] },
                 isLoggedIn: true,
                 syncError: null,
             });

@@ -85,7 +85,7 @@ router.post("/", async (req, res) => {
         { userId },
         {
           $addToSet: { sessions: sessionId },
-          $setOnInsert: { email: `${userId}@placeholder.com`, createdAt: new Date() },
+          $setOnInsert: { createdAt: new Date() },
           $set: { updatedAt: new Date() }
         },
         { upsert: true }

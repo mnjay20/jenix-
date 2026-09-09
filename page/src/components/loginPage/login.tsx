@@ -6,20 +6,19 @@ import jLogo from "../../assets/j_logo.png";
 
 export const LoginPage = () => {
     const [username, setUsername] = useState("");
-    const [gmail, setGmail] = useState("");
     const [isSyncing, setIsSyncing] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!username.trim() || !gmail.trim()) return;
+        if (!username.trim()) return;
 
         setIsSyncing(true);
         setErrorMsg(null);
 
         try {
             console.log("[Login] Syncing user profile via REST API...");
-            await userStore.getState().login(username.trim(), gmail.trim());
+            await userStore.getState().login(username.trim());
             console.log("[Login] Sync success. Proceeding to main dashboard.");
             setIsSyncing(false);
         } catch (err: any) {
@@ -63,22 +62,6 @@ export const LoginPage = () => {
                             placeholder="Enter your username"
                             value={username}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                            required
-                            disabled={isSyncing}
-                            className="w-full bg-zinc-900/40 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:border-theme-accent focus-visible:ring-theme-accent/20"
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="gmail" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                            Gmail Address
-                        </label>
-                        <Input
-                            id="gmail"
-                            type="email"
-                            placeholder="name@gmail.com"
-                            value={gmail}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGmail(e.target.value)}
                             required
                             disabled={isSyncing}
                             className="w-full bg-zinc-900/40 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:border-theme-accent focus-visible:ring-theme-accent/20"

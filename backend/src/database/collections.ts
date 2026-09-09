@@ -74,8 +74,10 @@ export async function getUserCollection(): Promise<Collection> {
             try {
                 const db = await getDb()
                 const col = db.collection("Users")
+                try {
+                    await col.dropIndex("email_1");
+                } catch (e) {}
                 await col.createIndex({ userId: 1 }, { unique: true })
-                await col.createIndex({ email: 1 })
                 return col
             } catch (err) {
                 UserCollection = null;

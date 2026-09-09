@@ -7,7 +7,6 @@ const router = Router();
 
 const syncUserSchema = z.object({
   userId: z.string().min(1, "userId is required"),
-  email: z.string().email("Invalid email format"),
 });
 
 // POST /api/users/sync - Upsert user profile
@@ -21,14 +20,13 @@ router.post("/sync", async (req, res) => {
       });
     }
 
-    const { userId, email } = parsed.data;
+    const { userId } = parsed.data;
     const col = await getUserCollection();
 
     await col.updateOne(
       { userId },
       {
         $set: {
-          email,
           updatedAt: new Date()
         },
         $setOnInsert: {
@@ -39,7 +37,7 @@ router.post("/sync", async (req, res) => {
       { upsert: true }
     );
 
-    logger.info(`User successfully synced via REST API: ${userId} (${email})`);
+    logger.info(`User successfully synced via REST API: ${userId}`);
     return res.status(200).json({ success: true, message: "User synced successfully" });
   } catch (error) {
     logger.error("Error in POST /api/users/sync:", error);
