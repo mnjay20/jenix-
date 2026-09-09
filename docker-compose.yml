@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # 1. Redis Cache & Job Context Store
+  # 1. Redis Cache & Job Queue Context Store
   redis:
     image: redis:7-alpine
     container_name: jenix-redis
@@ -10,6 +8,8 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - jenix-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -32,6 +32,8 @@ services:
       - REDIS_PORT=6379
     env_file:
       - ./backend/.env
+    networks:
+      - jenix-net
     depends_on:
       redis:
         condition: service_healthy
@@ -44,9 +46,15 @@ services:
     container_name: jenix-frontend
     restart: always
     ports:
-      - "5173:5173"
+      - "5173:80"
+    networks:
+      - jenix-net
     depends_on:
       - backend
+
+networks:
+  jenix-net:
+    driver: bridge
 
 volumes:
   redis_data:
