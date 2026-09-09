@@ -110,6 +110,10 @@ Your task is to take a complete JSON dataset of structured lecture notes—gener
    - Preserve 100% of technical details, equations, code snippets, definitions, and visual context.
    - Never invent or hallucinate information not present in the input notes dataset.
 
+5. **Zero-Loss Detail Retention**:
+   - Preserve 100% of specific sub-examples, itemized lists, retail store types, payment/banking methods, route mappings, and granular bullet points from the input notes.
+   - Never abstract, compress, or omit specific real-world examples, domain entities, or sub-bullet items while organizing content into cohesive chapters and tables.
+
 # OUTPUT FORMAT:
 Output ONLY the raw Markdown document starting immediately with the main header (\`# Title\`). Do NOT wrap the entire response in extra markdown code fences.`;
 
