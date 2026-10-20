@@ -7,7 +7,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipDefaultLibCheck": true,
-    "noEmit": true,
+    "noEmit": false,
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",

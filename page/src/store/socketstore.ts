@@ -461,7 +461,6 @@ export const socketStore = create<SocketState>((set, get) => ({
             }
 
             const savedProgress = data.session?.progress || 0;
-            const savedTime = duration > 0 ? (savedProgress / 100) * duration : 0;
             const existingTopics = data.session?.topics || [];
             const existingTranscripts = data.session?.transcripts || [];
             const rawFrames: FrameItem[] = [

@@ -14,6 +14,7 @@ export const SessionSchema = z.object({
     "failed",
   ]),
   progress: z.number(),
+  summary: z.string().optional(),
   createdAt: z.coerce.date(),
 });
 
@@ -27,6 +28,7 @@ export const RedisSessionSchema = SessionSchema.extend({
     "failed",
   ]),
   progress: z.number(),
+  summary: z.string().optional(),
   lastActivity: z.coerce.date().optional(),
 });
 export type RedisSessionType = z.infer<typeof RedisSessionSchema>

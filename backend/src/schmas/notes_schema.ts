@@ -42,6 +42,7 @@ export const LecturNotesSchema = z.object({
   sessionId: z.string(),
   videoTitle: z.string(),
   topics: z.array(TopicSchema),
+  summary: z.string().optional().describe("Rolling summary of the lecture notes"),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });

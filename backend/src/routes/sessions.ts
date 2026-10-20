@@ -15,6 +15,7 @@ import {
   getTranscriptionCollection,
 } from "../database/collections.js";
 import { redis } from "../configs/redis.js";
+import { setSessionCache, getOrRebuildSessionStatus, RedisKeys } from "../utils/redis_cache.js";
 import { logger } from "../utils/logger.js";
 import { cleanYoutubeUrl } from "../utils/load_audio.js";
 
@@ -94,12 +95,11 @@ router.post("/", async (req, res) => {
       logger.error(`Failed to link session ${sessionId} to user ${userId}:`, userErr);
     }
 
-    // Cache initial session state in Redis
-    await redis.hset(`session:${sessionId}`, {
+    // Cache initial session state in Redis with 24h TTL
+    await setSessionCache(sessionId, {
       status: "creating",
       progress: 0,
     });
-    await redis.expire(`session:${sessionId}`, 86400);
 
     logger.info(`Session created via REST: ${sessionId} for video "${videoTitle}" (user: ${userId})`);
     return res.status(201).json({
@@ -129,16 +129,15 @@ router.get("/:sessionId", async (req, res) => {
     const col = await getSessionCollection();
     const sessionDb = await col.findOne({ sessionId });
     if (!sessionDb) {
-      await redis.del(`session:${sessionId}`);
+      await redis.del(RedisKeys.session(sessionId));
       return res.status(404).json({ success: false, message: "Session not found" });
     }
 
-    // Synchronize Redis cache with MongoDB
-    await redis.hset(`session:${sessionId}`, {
+    // Synchronize Redis cache with MongoDB (24h TTL)
+    await setSessionCache(sessionId, {
       status: sessionDb.status,
       progress: sessionDb.progress,
     });
-    await redis.expire(`session:${sessionId}`, 86400);
 
     // Fetch existing notes topics
     const notesCol = await getNotesCollection();
@@ -221,9 +220,8 @@ router.patch("/:sessionId/progress", async (req, res) => {
 
     const { progress } = parsedPayload.data;
 
-    await redis.hset(`session:${sessionId}`, {
+    await setSessionCache(sessionId, {
       progress,
-      lastActivity: new Date().toISOString(),
     });
 
     const col = await getSessionCollection();
@@ -239,6 +237,35 @@ router.patch("/:sessionId/progress", async (req, res) => {
     return res.status(200).json({ success: true, message: "Progress updated successfully", progress });
   } catch (error) {
     logger.error("Error in PATCH /api/sessions/:sessionId/progress:", error);
+    return res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Internal server error"
+    });
+  }
+});
+
+// GET /api/sessions/:sessionId/status - Retrieve session status (with Redis cache-miss DB recovery)
+router.get("/:sessionId/status", async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: "sessionId is required" });
+    }
+
+    const sessionState = await getOrRebuildSessionStatus(sessionId);
+    if (!sessionState) {
+      return res.status(404).json({ success: false, message: "Session not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      sessionId,
+      status: sessionState.status,
+      progress: sessionState.progress,
+      source: sessionState.source,
+    });
+  } catch (error) {
+    logger.error("Error in GET /api/sessions/:sessionId/status:", error);
     return res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : "Internal server error"
@@ -272,9 +299,8 @@ router.patch("/:sessionId/status", async (req, res) => {
       return res.status(200).json({ success: true, message: "Session is already ended", status: "ended" });
     }
 
-    await redis.hset(`session:${sessionId}`, {
+    await setSessionCache(sessionId, {
       status,
-      lastActivity: new Date().toISOString(),
     });
 
     await col.updateOne(
@@ -305,9 +331,8 @@ router.post("/:sessionId/leave", async (req, res) => {
       return res.status(200).json({ success: true, message: `Session ${sessionId} is ended` });
     }
 
-    await redis.hset(`session:${sessionId}`, {
+    await setSessionCache(sessionId, {
       status: "paused",
-      lastActivity: new Date().toISOString(),
     });
 
     if (existing) {
@@ -333,13 +358,13 @@ router.post("/:sessionId/end", async (req, res) => {
   try {
     const { sessionId } = req.params;
 
-    await redis.hset(`session:${sessionId}`, {
+    await setSessionCache(sessionId, {
       status: "ended",
       progress: 100,
-      lastActivity: new Date().toISOString(),
     });
 
-    await redis.del(`audio_queue:${sessionId}`);
+    await redis.del(RedisKeys.audioQueue(sessionId));
+    await redis.del(RedisKeys.context(sessionId));
 
     try {
       await rm(`cache/${sessionId}`, { recursive: true, force: true });

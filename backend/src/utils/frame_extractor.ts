@@ -27,6 +27,7 @@ const USER_AGENT =
 
 /**
  * Retrieves the direct video stream URL using yt-dlp, caching results for 30 minutes.
+ * Prioritizes high-resolution HLS (m3u8_native) or DASH video streams up to 1080p.
  */
 async function getVideoStreamUrl(cleanUrl: string, forceRefresh = false): Promise<string> {
   const cached = streamUrlCache.get(cleanUrl);
@@ -34,9 +35,9 @@ async function getVideoStreamUrl(cleanUrl: string, forceRefresh = false): Promis
     return cached.streamUrl;
   }
 
-  logger.info(`Fetching direct video stream URL via yt-dlp for: ${cleanUrl}`);
+  logger.info(`Fetching direct high-quality video stream URL via yt-dlp for: ${cleanUrl}`);
   const { stdout } = await execPromise(
-    `yt-dlp --no-playlist --user-agent "${USER_AGENT}" --extractor-args "youtube:player-client=android" -f "bestvideo[height<=720]/best" -g "${cleanUrl}"`,
+    `yt-dlp --no-playlist --user-agent "${USER_AGENT}" -f "bestvideo[protocol=m3u8_native][height<=1080]/bestvideo[height<=1080]/bestvideo/best" -g "${cleanUrl}"`,
     { timeout: 20000 }
   );
 
@@ -112,16 +113,16 @@ async function detectSceneTimestamps(
 }
 
 /**
- * Extracts a single JPEG frame at a given timestamp in seconds from a direct stream URL.
- * Scaled to 480px with optimized JPEG compression for rapid transfer and low token cost.
+ * Extracts a single high-quality JPEG frame at a given timestamp in seconds from a direct stream URL.
+ * Preserves high resolution (up to 1080p Full HD) with pristine JPEG quality (q:v 2).
  */
 async function extractSingleFrame(
   streamUrl: string,
   timestampSeconds: number
 ): Promise<string> {
   const { stdout: buffer } = await execPromise(
-    `ffmpeg -y -ss ${timestampSeconds} -user_agent "${USER_AGENT}" -i "${streamUrl}" -vf "scale=480:-2" -q:v 10 -vframes 1 -f image2pipe -vcodec mjpeg -`,
-    { encoding: "buffer", maxBuffer: 10 * 1024 * 1024, timeout: 20000 }
+    `ffmpeg -y -ss ${timestampSeconds} -user_agent "${USER_AGENT}" -i "${streamUrl}" -vf "scale='min(1920,iw)':-2" -q:v 2 -vframes 1 -f image2pipe -vcodec mjpeg -`,
+    { encoding: "buffer", maxBuffer: 25 * 1024 * 1024, timeout: 20000 }
   );
 
   return (buffer as Buffer).toString("base64");

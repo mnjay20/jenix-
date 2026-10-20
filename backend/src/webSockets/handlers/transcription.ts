@@ -1,6 +1,6 @@
 import type { Socket } from "socket.io";
 import { Events } from "../../utils/events.js";
-import { redis } from "../../configs/redis.js";
+import { popAudioChunkWithRebuild, updateTranscriptContext } from "../../utils/redis_cache.js";
 import { transcribeAudio } from "../../transcription/index.js";
 import { unlink } from 'fs/promises';
 import type { TranscriptChunk } from "../../schmas/transcript_chunk.js";
@@ -30,14 +30,13 @@ export function transcriptHandler(socket: Socket) {
 
         try {
             logger.info(`Requested transcription for next chunk in session: ${sessionId}`);
-            const audioChunk = await redis.zpopmin(`audio_queue:${sessionId}`);
-            if (!audioChunk || audioChunk.length === 0) {
+            const paresedChunk = await popAudioChunkWithRebuild(sessionId);
+            if (!paresedChunk) {
                 logger.info(`No more audio chunks available for session: ${sessionId}`);
                 socket.emit(events.TRANSCRIPT.COMPLETED, { message: "All audio chunks processed" });
                 return;
             }
 
-            const paresedChunk = JSON.parse(audioChunk[0]!);
             logger.info(`Processing chunkIndex: ${paresedChunk.chunkIndex} in session: ${sessionId}`);
             
             const fs = await import("fs");
@@ -87,21 +86,7 @@ export function transcriptHandler(socket: Socket) {
                 text: transcript,
             };
 
-            const isKeyExists = await redis.exists(`context:${sessionId}`);
-            if (isKeyExists === 0) {
-                await redis.hset(`context:${sessionId}`, {
-                    summary: '',
-                    previousChunk: '',
-                    currentChunk: JSON.stringify(transcriptChunk)
-                });
-            } else {
-                const previousChunk = await redis.hget(`context:${sessionId}`, 'currentChunk');
-                await redis.hset(`context:${sessionId}`, {
-                    previousChunk: previousChunk ?? '',
-                    currentChunk: JSON.stringify(transcriptChunk)
-                });
-            }
-            await redis.expire(`context:${sessionId}`, 60 * 60 * 24);
+            await updateTranscriptContext(sessionId, transcriptChunk);
 
             // Verify socket is still listening to this session before graph invocation
             if (socket.data.sessionId !== sessionId) {

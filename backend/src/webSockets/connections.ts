@@ -2,7 +2,7 @@ import { getSessionCollection } from "../database/collections.js";
 import { Events } from "../utils/events.js";
 import { getIO } from "./server.js";
 import { logger } from "../utils/logger.js";
-import { redis } from "../configs/redis.js";
+import { setSessionCache } from "../utils/redis_cache.js";
 import { SessionJoinHandler, SessionLeaveHandler } from "./handlers/sessions.js";
 import { downloadAndChunkingHandler } from "./handlers/audio_chunking.js";
 import { transcriptHandler } from "./handlers/transcription.js";
@@ -52,9 +52,8 @@ export function registerSocketHandlers() {
             const sessionId = socket.data.sessionId;
             if (sessionId) {
                 logger.info(`Socket ${socket.id} disconnected. Pausing session ${sessionId}`);
-                await redis.hset(`session:${sessionId}`, {
+                await setSessionCache(sessionId, {
                     status: "paused",
-                    lastActivity: new Date().toISOString(),
                 });
                 const col = await getSessionCollection();
                 if (col) {

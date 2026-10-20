@@ -1,4 +1,4 @@
-import { redis } from "../configs/redis.js";
+import { getOrRebuildTranscriptContext } from "../utils/redis_cache.js";
 import type { State } from "./graph.js";
 import type { TranscriptChunk } from "../schmas/transcript_chunk.js";
 import { logger } from "../utils/logger.js";
@@ -6,16 +6,21 @@ import { getSessionCollection } from "../database/collections.js";
 
 export const stateLoader = async (state: State) => {
     const sessionId = state.sessionId;
-    const context = await redis.hgetall(`context:${sessionId}`);
+    const { currentChunk, previousChunk, summary, source } = await getOrRebuildTranscriptContext(sessionId, {
+        videoTitle: state.videoTitle,
+        videoUrl: state.videoUrl,
+        chunkIndex: state.chunkIndex,
+        startTimestamp: state.startTimestamp,
+        endTimestamp: state.endTimestamp,
+        transcript: state.transcript,
+    });
 
-    if (!context.currentChunk) {
-        logger.error(`No current chunk found for session: ${sessionId}`);
+    if (!currentChunk) {
+        logger.error(`No current chunk found for session: ${sessionId} (source: ${source})`);
         throw new Error(`No current chunk found for session: ${sessionId}`);
     }
-    const currentChunk = JSON.parse(context.currentChunk) as TranscriptChunk;
-    const previousChunk = context.previousChunk ? JSON.parse(context.previousChunk) as TranscriptChunk : null;
 
-    let videoUrl = (currentChunk as any).videoUrl || '';
+    let videoUrl = (currentChunk as any).videoUrl || state.videoUrl || '';
     if (!videoUrl) {
         try {
             const col = await getSessionCollection();
@@ -24,16 +29,19 @@ export const stateLoader = async (state: State) => {
         } catch (e) {}
     }
 
-    logger.info(`Successfully loaded context chunk index ${currentChunk.chunkIndex} for session: ${sessionId}`);
+    logger.info(
+        `Successfully loaded context chunk index ${currentChunk.chunkIndex} for session: ${sessionId} (source: ${source})`
+    );
+
     return {
         chunkIndex: currentChunk.chunkIndex,
-        videoTitle: currentChunk.videoTitle ?? '',
+        videoTitle: currentChunk.videoTitle ?? state.videoTitle ?? '',
         videoUrl,
-        rollingSummary: context.summary ?? '',
-        previousTranscript: previousChunk?.text ?? '',
-        transcript: currentChunk?.text ?? '',
-        startTimestamp: currentChunk.startAt,
-        endTimestamp: currentChunk.endAt,
+        rollingSummary: summary || state.rollingSummary || '',
+        previousTranscript: previousChunk?.text ?? state.previousTranscript ?? '',
+        transcript: currentChunk?.text ?? state.transcript ?? '',
+        startTimestamp: currentChunk.startAt ?? state.startTimestamp ?? 0,
+        endTimestamp: currentChunk.endAt ?? state.endTimestamp ?? 0,
         frames: state.frames || [],
     };
 };

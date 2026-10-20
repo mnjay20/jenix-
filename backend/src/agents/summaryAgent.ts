@@ -1,7 +1,7 @@
 import { stuctModelProvider } from "../configs/gemini.js";
 import { summaryAgentPrompt } from "./prompts/prompts.js";
 import type { State } from "./graph.js";
-import { redis } from "../configs/redis.js";
+import { saveRollingSummary } from "../utils/redis_cache.js";
 import { logger } from "../utils/logger.js";
 
 const summaryModel = stuctModelProvider("google");
@@ -29,7 +29,7 @@ export const summaryAgentNode = async (state: State) => {
         const updatedSummary = contentStr.trim() || state.rollingSummary || "";
 
         if (updatedSummary) {
-            await redis.hset(`context:${state.sessionId}`, "summary", updatedSummary);
+            await saveRollingSummary(state.sessionId, updatedSummary);
         }
 
         return {

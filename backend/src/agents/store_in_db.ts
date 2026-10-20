@@ -63,16 +63,21 @@ export const sendAndsaveNode = async (state: State) => {
                 sessionId: state.sessionId,
                 videoTitle: state.videoTitle,
                 topics: state.notes.topics,
+                summary: state.rollingSummary || undefined,
                 updatedAt: new Date(),
                 createdAt: new Date(),
             } as LectureNotesType);
             logger.info(`Created new notes document in database for session: ${state.sessionId}`);
         } else if (state.notes.topics.length > 0) {
+            const updateFields: any = { updatedAt: new Date() };
+            if (state.rollingSummary) {
+                updateFields.summary = state.rollingSummary;
+            }
             await col.updateOne(
                 { sessionId: state.sessionId },
                 { 
                     $push: { topics: { $each: state.notes.topics } as any },
-                    $set: { updatedAt: new Date() }
+                    $set: updateFields
                 }
             );
             logger.info(`Appended notes chunk to existing document for session: ${state.sessionId}`);

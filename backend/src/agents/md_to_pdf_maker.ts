@@ -1,3 +1,4 @@
+import fs from "fs";
 import { stuctModelProvider, embeddings } from "../configs/gemini.js";
 import { getNotesCollection, getEmbeddingsCollection } from "../database/collections.js";
 import { logger } from "../utils/logger.js";
@@ -85,6 +86,40 @@ async function convertNotesToMd(sessionId: string) {
     }
 }
 
+function getBrowserLaunchOptions() {
+    const launchOptions: { args: string[]; executablePath?: string } = {
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    };
+
+    if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+        launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        return launchOptions;
+    }
+
+    // Check system browser paths if installed
+    const systemPaths = [
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+        process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe` : "",
+        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    ].filter(Boolean);
+
+    for (const p of systemPaths) {
+        if (fs.existsSync(p)) {
+            launchOptions.executablePath = p;
+            break;
+        }
+    }
+
+    return launchOptions;
+}
+
 export async function convertMdToPdf(sessionId: string) {
     try {
         const md = await convertNotesToMd(sessionId)
@@ -95,9 +130,7 @@ export async function convertMdToPdf(sessionId: string) {
         const pdf = await mdToPdf(
             { content: md },
             {
-                launch_options: {
-                    args: ['--no-sandbox', '--disable-setuid-sandbox']
-                }
+                launch_options: getBrowserLaunchOptions()
             }
         )
         if (!pdf || !pdf.content) {

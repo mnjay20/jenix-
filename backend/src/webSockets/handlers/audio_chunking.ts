@@ -7,7 +7,7 @@ import { audioChunker } from "../../utils/audio_chunk.js";
 import { env } from "../../utils/env.js";
 import { Events } from "../../utils/events.js";
 import { getIO } from "../server.js";
-import { redis } from "../../configs/redis.js";
+import { populateAudioQueue } from "../../utils/redis_cache.js";
 import { logger } from "../../utils/logger.js";
 import { getSessionCollection } from "../../database/collections.js";
 
@@ -63,20 +63,21 @@ export function downloadAndChunkingHandler(socket: any) {
 
         const files = (await readdir(`./cache/${sessionId}`))
           .filter((file) => file.endsWith(".wav"))
-          .sort();
+          .sort((a, b) => {
+            const numA = parseInt(a.replace(/\.wav$/i, ""), 10);
+            const numB = parseInt(b.replace(/\.wav$/i, ""), 10);
+            return numA - numB;
+          });
 
-        for (const [index, file] of files.entries()) {
-          const audioPath = `./cache/${sessionId}/${file}`;
+        const chunkItems = files.map((file) => {
+          const chunkIndex = parseInt(file.replace(/\.wav$/i, ""), 10);
+          return {
+            chunkIndex,
+            path: `./cache/${sessionId}/${file}`,
+          };
+        });
 
-          await redis.zadd(
-            `audio_queue:${sessionId}`,
-            index,
-            JSON.stringify({
-              chunkIndex: index,
-              path: audioPath,
-            }),
-          );
-        }
+        await populateAudioQueue(sessionId, chunkItems);
 
         logger.info(`Audio chunking completed for session ${sessionId} (${files.length} chunks)`);
         io?.to(sessionId)?.emit(events.AUDIO.CHUNKING_COMPLETED, {
